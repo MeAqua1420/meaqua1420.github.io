@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>显示API数据和折线图</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <style>
+    body,
+    html {
+        margin: 0;
+        font-family: "微软雅黑";
+    }
+    #container {
+        float: left;
+        width: 60%;
+        height: 80vh;
+    }
+    #dataDisplay {
+        float: right;
+        width: 40%;
+        height: 40vh;
+        padding: 20px;
+        font-size: 18px;
+    }
+    #charts {
+        float: right;
+        width: 40%;
+        height: 40vh;
+    }
+    #temperatureChart, #sugarChart {
+        width: 100%;
+        height: 40vh;
+    }
+    </style>
+    <script src="https://api.map.baidu.com/api?type=webgl&v=1.0&ak=lJhDg9V3IUYAMqYaMslqoof5FZm8eXcf"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="dataDisplay">
+        <p id="longitude">经度：</p>
+        <p id="latitude">纬度：</p>
+        <p id="temperature">体温：</p>
+        <p id="pressure">血压：</p>
+        <p id="sugar">血糖：</p>
+    </div>
+    <div id="charts">
+        <canvas id="temperatureChart"></canvas>
+        <canvas id="sugarChart"></canvas>
+    </div>
+
+    <script type="text/javascript">
+        // 初始化地图
+        var map = new BMapGL.Map('container');
+        map.enableScrollWheelZoom(true);
+        var marker, label;
+
+        function updateMap(longitude, latitude) {
+            var point = new BMapGL.Point(longitude, latitude);
+
+            // 更新地图的中心点
+            map.centerAndZoom(point, 18);
+
+            // 如果标记已经存在，更新位置；否则创建新的标记和标签
+            if (marker) {
+                marker.setPosition(point);
+                label.setPosition(point);
+            } else {
+                marker = new BMapGL.Marker(point);
+                label = new BMapGL.Label("位置点", { position: point, offset: new BMapGL.Size(10, 20) });
+                map.addOverlay(marker);
+                map.addOverlay(label);
+            }
+        }
+
+        // 初始化 Chart.js 图表
+        var ctxTemperature = document.getElementById('temperatureChart').getContext('2d');
+        var ctxSugar = document.getElementById('sugarChart').getContext('2d');
+
+        var temperatureData = [];
+        var sugarData = [];
+        var labels = [];
+        
+        var temperatureChart = new Chart(ctxTemperature, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '体温 (°C)',
+                    data: temperatureData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '体温 (°C)'
+                        },
+                        min: 36,
+                        max: 38
+                    }
+                }
+            }
+        });
+
+        var sugarChart = new Chart(ctxSugar, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '血糖 (mg/dL)',
+                    data: sugarData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '时间'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '血糖 (mg/dL)'
+                        },
+                        min: 70,
+                        max: 140
+                    }
+                }
+            }
+        });
+
+        // 从API获取数据并显示在页面上
+        function fetchData() {
+            fetch('http://47.113.197.249:8082/api/data/fetchData')
+                .then(response => response.json())
+                .then(data => {
+                    // 显示API返回的字段信息
+                    document.getElementById("longitude").innerHTML = "经度：" + data.longitude;
+                    document.getElementById("latitude").innerHTML = "纬度：" + data.latitude;
+                    document.getElementById("temperature").innerHTML = "体温：" + data.temperature + "°C";
+                    document.getElementById("pressure").innerHTML = "血压：" + data.pressure + " mmHg";
+                    document.getElementById("sugar").innerHTML = "血糖：" + data.sugar + " mg/dL";
+
+                    var currentTime = new Date().toLocaleTimeString();
+
+                    // 更新地图的经纬度位置
+                    updateMap(data.longitude, data.latitude);
+
+                    // 更新图表数据
+                    if (labels.length > 10) {
+                        labels.shift();
+                        temperatureData.shift();
+                        sugarData.shift();
+                    }
+                    labels.push(currentTime);
+                    temperatureData.push(data.temperature.toFixed(2));
+                    sugarData.push(data.sugar.toFixed(2));
+
+                    temperatureChart.update();
+                    sugarChart.update();
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // 每隔1秒更新一次数据
+        setInterval(fetchData, 2000);
+    </script>
+
+</body>
+</html>
