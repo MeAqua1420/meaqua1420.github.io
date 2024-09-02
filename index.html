@@ -150,7 +150,7 @@
 
         // 从API获取数据并显示在页面上
         function fetchData() {
-            fetch('https://thingproxy.freeboard.io/fetch/http://47.113.197.249:8082/api/data/fetchData' ,{
+            fetch('http://47.113.197.249:8082/api/data/fetchData' ,{
                 mode: 'no-cors'
                 })
                 .then(response => response.json())
