@@ -43,7 +43,8 @@
         <p id="longitude">经度：</p>
         <p id="latitude">纬度：</p>
         <p id="temperature">体温：</p>
-        <p id="pressure">血压：</p>
+        <p id="highPressure">收缩压：</p>
+        <p id="lowPressure">舒张压：</p>
         <p id="sugar">血糖：</p>
     </div>
     <div id="charts">
@@ -149,41 +150,40 @@
 
         // 从API获取数据并显示在页面上
         function fetchData() {
-        fetch('https://cors-anywhere.herokuapp.com/http://47.113.197.249:8082/api/data/fetchData')
-        .then(response => response.text())
-        .then(data => {
-            console.log('Raw response:', data);  // 打印原始响应内容
+            fetch('https://cors-anywhere.herokuapp.com/http://47.113.197.249:8082/api/data/fetchData')
+                .then(response => response.json())
+                .then(data => {
+                    // 显示API返回的字段信息
+                    document.getElementById("longitude").innerHTML = "经度：" + data.longitude;
+                    document.getElementById("latitude").innerHTML = "纬度：" + data.latitude;
+                    document.getElementById("temperature").innerHTML = "体温：" + data.temperature + "°C";
+                    document.getElementById("highPressure").innerHTML = "收缩压：" + data.highPressure + " mmHg";
+                    document.getElementById("lowPressure").innerHTML = "舒张压：" + data.lowPressure + " mmHg";
+                    document.getElementById("sugar").innerHTML = "血糖：" + data.sugar + " mg/dL";
 
-            // 显示API返回的字段信息
-            document.getElementById("longitude").innerHTML = "经度：" + data.longitude;
-            document.getElementById("latitude").innerHTML = "纬度：" + data.latitude;
-            document.getElementById("temperature").innerHTML = "体温：" + data.temperature + "°C";
-            document.getElementById("pressure").innerHTML = "血压：" + data.pressure + " mmHg";
-            document.getElementById("sugar").innerHTML = "血糖：" + data.sugar + " mg/dL";
+                    var currentTime = new Date().toLocaleTimeString();
 
-            var currentTime = new Date().toLocaleTimeString();
+                    // 更新地图的经纬度位置
+                    updateMap(data.longitude, data.latitude);
 
-            // 更新地图的经纬度位置
-            updateMap(data.longitude, data.latitude);
+                    // 更新图表数据
+                    if (labels.length > 10) {
+                        labels.shift();
+                        temperatureData.shift();
+                        sugarData.shift();
+                    }
+                    labels.push(currentTime);
+                    temperatureData.push(data.temperature.toFixed(2));
+                    sugarData.push(data.sugar.toFixed(2));
 
-            // 更新图表数据
-            if (labels.length > 10) {
-                labels.shift();
-                temperatureData.shift();
-                sugarData.shift();
-            }
-            labels.push(currentTime);
-            temperatureData.push(data.temperature.toFixed(2));
-            sugarData.push(data.sugar.toFixed(2));
-
-            temperatureChart.update();
-            sugarChart.update();
-        })
-        .catch(error => console.error('Error fetching data:', error));
-}
+                    temperatureChart.update();
+                    sugarChart.update();
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
 
         // 每隔1秒更新一次数据
-        setInterval(fetchData, 60000);
+        setInterval(fetchData, 2000);
     </script>
 
 </body>
