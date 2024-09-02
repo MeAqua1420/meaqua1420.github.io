@@ -150,7 +150,7 @@
         // 从API获取数据并显示在页面上
         function fetchData() {
         fetch('https://cors-anywhere.herokuapp.com/http://47.113.197.249:8082/api/data/fetchData')
-        .then(response => response.json())
+        .then(response => response.text())
         .then(data => {
             console.log('Raw response:', data);  // 打印原始响应内容
 
